@@ -27,5 +27,5 @@ Para a versão web, use `pnpm buildWeb`. Depois do build, reinicie o Discord e h
 
 ## Configurações
 
-- **Subnets**: faixas IPv4 em notação CIDR, separadas por espaços em branco. O plugin escolhe um endereço entre as faixas configuradas. Para prefixos até `/30`, os endereços de rede e broadcast são excluídos.
-- **Port range**: intervalo inclusivo no formato `mínimo-máximo`. As portas devem estar entre 1 e 65535; os extremos podem ser informados em ordem inversa.
+- **Subnets**: faixas IPv4 em notação CIDR, separadas por espaços em branco. O plugin escolhe um endereço entre as faixas configuradas. Para prefixos até `/30`, os endereços de rede e broadcast são excluídos. Se nenhuma faixa for válida, uma notificação de erro é exibida e o endereço permanece inalterado.
+- **Port range**: intervalo inclusivo no formato `mínimo-máximo`. Os dois extremos devem estar entre 1024 e 65535; intervalos que incluam portas reservadas (0–1023) são rejeitados e usam o padrão `10000-20000`, com uma notificação de erro. Os extremos podem ser informados em ordem inversa.

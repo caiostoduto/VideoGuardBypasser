@@ -1,9 +1,18 @@
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
-import { UserStore } from "@webpack/common";
+import { LocaleStore, showToast, UserStore } from "@webpack/common";
 
 const VIDEO_GUARD = "2026-08-video-guard";
+const notifiedErrors = new Map<string, string>();
+
+function showConfigError(key: string, value: string, message: { en: string; ptBR: string; }) {
+    if (notifiedErrors.get(key) === value) return;
+    notifiedErrors.set(key, value);
+
+    const locale = LocaleStore.locale.toLowerCase();
+    showToast(locale.startsWith("pt") ? message.ptBR : message.en, "failure");
+}
 
 interface ApexExperimentStore {
     getServerAssignment(type: string, id: string, experiment: string): { variantId: string; };
@@ -33,7 +42,7 @@ const settings = definePluginSettings({
         default: "190.98.192.0/18"
     },
     portRange: {
-        description: "Inclusive port range in min-max format",
+        description: "Inclusive port range in min-max format (1024-65535)",
         type: OptionType.STRING,
         default: "10000-20000"
     }
@@ -112,14 +121,26 @@ export default definePlugin({
     }) {
         const address = randomIpFromSubnets(settings.store.subnets);
         if (!address) {
-            console.warn("[Video Guard bypasser] No valid IPv4 subnets configured; leaving placeholder address unchanged");
+            showConfigError("subnets", settings.store.subnets, {
+                en: "No valid IPv4 CIDR subnets configured. Check the Subnets setting.",
+                ptBR: "Nenhuma sub-rede IPv4 CIDR válida configurada. Verifique a opção Subnets."
+            });
             return data;
         }
+        notifiedErrors.delete("subnets");
 
         const portRange = settings.store.portRange.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
-        const startPort = portRange ? Number(portRange[1]) : 10000;
-        const endPort = portRange ? Number(portRange[2]) : 20000;
-        const validRange = [startPort, endPort].every(port => port >= 1 && port <= 65535);
+        const startPort = portRange ? Number(portRange[1]) : NaN;
+        const endPort = portRange ? Number(portRange[2]) : NaN;
+        const validRange = portRange !== null && [startPort, endPort].every(port => port >= 1024 && port <= 65535);
+        if (!validRange) {
+            showConfigError("portRange", settings.store.portRange, {
+                en: "Invalid port range. Use min-max with both ports from 1024 to 65535; using 10000-20000.",
+                ptBR: "Intervalo de portas inválido. Use mínimo-máximo com ambas entre 1024 e 65535; usando 10000-20000."
+            });
+        } else {
+            notifiedErrors.delete("portRange");
+        }
         const minPort = Math.min(...(validRange ? [startPort, endPort] : [10000, 20000]));
         const maxPort = Math.max(...(validRange ? [startPort, endPort] : [10000, 20000]));
         const port = minPort + Math.floor(Math.random() * (maxPort - minPort + 1));

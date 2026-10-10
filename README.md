@@ -29,5 +29,5 @@ For a web build, use `pnpm buildWeb` instead. After rebuilding, restart Discord 
 
 ## Settings
 
-- **Subnets**: whitespace-separated IPv4 CIDR ranges. The plugin selects an address from the configured ranges. For prefixes up to `/30`, network and broadcast addresses are excluded.
-- **Port range**: inclusive `min-max` range. Ports must be between 1 and 65535; reversed endpoints are accepted.
+- **Subnets**: whitespace-separated IPv4 CIDR ranges. The plugin selects an address from the configured ranges. For prefixes up to `/30`, network and broadcast addresses are excluded. If none are valid, a localized error toast is shown and the address is left unchanged.
+- **Port range**: inclusive `min-max` range. Both endpoints must be between 1024 and 65535; ranges including reserved ports (0–1023) are rejected and fall back to `10000-20000`, with a localized error toast. Reversed endpoints are accepted.
