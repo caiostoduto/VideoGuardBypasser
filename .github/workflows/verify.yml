@@ -1,0 +1,71 @@
+name: Verify plugin builds
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Name of the folder created in Vencord/src/userplugins
+  PLUGIN_DIRNAME: videoGuardBypasser
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Resolve latest Vencord release tag
+        id: vencord
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh api repos/Vendicated/Vencord/releases/latest --jq .tag_name)
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            echo "Could not resolve latest Vencord release tag"; exit 1
+          fi
+          echo "Using Vencord tag: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Vencord (latest release tag)
+        uses: actions/checkout@v4
+        with:
+          repository: Vendicated/Vencord
+          ref: ${{ steps.vencord.outputs.tag }}
+          path: vencord
+
+      # pnpm version is read from the "packageManager" field in Vencord's package.json
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: vencord/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: vencord/pnpm-lock.yaml
+
+      - name: Add plugin to userplugins
+        run: |
+          mkdir -p "vencord/src/userplugins/${PLUGIN_DIRNAME}"
+          rsync -a --exclude='.git' --exclude='.github' "plugin/${PLUGIN_DIRNAME}" "vencord/src/userplugins/${PLUGIN_DIRNAME}/"
+
+      - name: Install dependencies
+        working-directory: vencord
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        working-directory: vencord
+        run: pnpm testTsc
+
+      - name: Build
+        working-directory: vencord
+        run: pnpm build
