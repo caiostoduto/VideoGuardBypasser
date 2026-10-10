@@ -31,7 +31,7 @@ jobs:
       - name: Add plugin to userplugins
         run: |
           mkdir -p "vencord/src/userplugins/${PLUGIN_DIRNAME}"
-          rsync -a --exclude='.git' --exclude='.github' "plugin/${PLUGIN_DIRNAME}" "vencord/src/userplugins/${PLUGIN_DIRNAME}/"
+          rsync -a --exclude='.git' --exclude='.github' "plugin/${PLUGIN_DIRNAME}" "vencord/src/userplugins"
 
       # pnpm version is read from the "packageManager" field in Vencord's package.json
       - name: Setup pnpm
