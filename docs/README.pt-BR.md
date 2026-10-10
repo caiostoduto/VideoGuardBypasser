@@ -15,7 +15,7 @@ Este é um proof of concept educacional para estudar dois fluxos do cliente do D
 ## Instalação
 
 > [!WARNING]
-> Esta ferramenta pode ser contra os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
+> Esta ferramenta pode infringir os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
 
 Este é um userplugin do Vencord e precisa ser compilado como parte de um checkout do código-fonte do Vencord; não pode ser compilado como um pacote TypeScript independente. Se você ainda não configurou um checkout do código-fonte, siga primeiro o guia [Building Vencord](https://docs.vencord.dev/installing/#building-vencord). As [instruções para plugins personalizados](https://docs.vencord.dev/installing/custom-plugins/) explicam em mais detalhes a estrutura de `src/userplugins`.
 
