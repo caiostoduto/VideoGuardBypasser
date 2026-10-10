@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: plugin
 
@@ -34,7 +34,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Checkout Vencord (latest release tag)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Vendicated/Vencord
           ref: ${{ steps.vencord.outputs.tag }}
@@ -42,12 +42,12 @@ jobs:
 
       # pnpm version is read from the "packageManager" field in Vencord's package.json
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: vencord/package.json
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
