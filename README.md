@@ -10,7 +10,7 @@
 An educational proof of concept for studying two client-side voice and screenshare flows in Discord. It has two independent parts:
 
 - On startup, it overrides the `2026-08-video-guard` experiment with `-1` (disabled). The experiment controls a client-side UI gate that can block screensharing.
-- During voice connection setup, the client communicates with a `*.discord.media` websocket, receives an RTC/SFU address and port, connects to that RTC/SFU, and then reports its IPv4 address to the websocket. This plugin intercepts the `selectProtocol` response and substitutes a configured IPv4 address and port before the client reports them.
+- During voice connection setup, the client communicates with a `*.discord.media` websocket, receives an RTC/SFU address and port, connects to that RTC/SFU, and then reports its IPv4 address to the websocket. This plugin intercepts the `selectProtocol` response and substitutes a configured IPv4 address and port before the client reports them. Discord's location policy treats the reported IPv4 as the client's address, so it considers the substituted address's location instead of the client's actual location.
 
 > [!WARNING]
 > This tool might be against [Discord's ToS](https://discord.com/terms). Use it at your own risk.
