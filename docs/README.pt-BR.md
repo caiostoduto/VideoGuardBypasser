@@ -1,8 +1,10 @@
+<div align="right">
+
+[English](/docs/README.en.md) · **Português (Brasil)**
+
+</div>
+
 # VideoGuardBypasser
-
-[English](/docs/README.en-GB.md) | [Português (Brasil)](/docs/README.pt-BR.md)
-
-## Português (Brasil)
 
 > [!NOTE]
 > O objetivo é demonstrar que os dados reportados pelo cliente estão sob controle do próprio cliente: o servidor não deve confiar em um endereço informado pelo usuário como prova de sua localização, nem usá-lo como único critério para decisões de política na camada de aplicação (OSI, camada 7).

@@ -1,1 +1,1 @@
-docs/README.en-GB.md
+docs/README.en.md

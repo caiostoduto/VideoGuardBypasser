@@ -1,8 +1,10 @@
+<div align="right">
+
+**English** · [Português (Brasil)](/docs/README.pt-BR.md)
+
+</div>
+
 # VideoGuardBypasser
-
-[English](/docs/README.en-GB.md) | [Português (Brasil)](/docs/README.pt-BR.md)
-
-## English
 
 > [!NOTE]
 > The point is to demonstrate that client-reported data is under the client's control: a server must not trust a self-reported address as proof of a user's location or use it as the sole basis for application-layer (OSI Layer 7) policy decisions.
