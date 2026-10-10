@@ -21,7 +21,7 @@ An educational proof of concept for studying two client-side voice and screensha
 
 This is a Vencord userplugin, so it must be built as part of a Vencord source checkout; it cannot be compiled as a standalone TypeScript package. If you have not set up a source checkout yet, follow Vencord's [Building Vencord guide](https://docs.vencord.dev/installing/#building-vencord) first. The [custom plugin instructions](https://docs.vencord.dev/installing/custom-plugins/) describe the `src/userplugins` layout in more detail.
 
-Copy this repository's `VideoGuardBypasser` folder into `<Vencord checkout>/src/userplugins/`, so the plugin's entry point is at `src/userplugins/VideoGuardBypasser/index.ts`. From the Vencord checkout, build for your target platform:
+Copy this repository's `videoGuardBypasser` folder into `<Vencord checkout>/src/userplugins/`, so the plugin's entry point is at `src/userplugins/videoGuardBypasser/index.ts`. From the Vencord checkout, build for your target platform:
 
 ```sh
 pnpm build

@@ -21,7 +21,7 @@ Este é um proof of concept educacional para estudar dois fluxos do cliente do D
 
 Este é um userplugin do Vencord e precisa ser compilado como parte de um checkout do código-fonte do Vencord; não pode ser compilado como um pacote TypeScript independente. Se você ainda não configurou um checkout do código-fonte, siga primeiro o guia [Building Vencord](https://docs.vencord.dev/installing/#building-vencord). As [instruções para plugins personalizados](https://docs.vencord.dev/installing/custom-plugins/) explicam em mais detalhes a estrutura de `src/userplugins`.
 
-Copie a pasta `VideoGuardBypasser` deste repositório para `<checkout do Vencord>/src/userplugins/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/VideoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
+Copie a pasta `videoGuardBypasser` deste repositório para `<checkout do Vencord>/src/userplugins/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
 
 ```sh
 pnpm build
