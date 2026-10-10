@@ -1,6 +1,6 @@
 # VideoGuardBypasser
 
-[English](./README.md) | [Português (Brasil)](#videoguardbypasser)
+[English](/docs/README.en-GB.md) | [Português (Brasil)](/docs/README.pt-BR.md)
 
 ## Português (Brasil)
 
