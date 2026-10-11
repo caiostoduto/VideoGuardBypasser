@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Name of the folder created in Vencord/src/userplugins
-  PLUGIN_DIRNAME: videoGuardBypasser
-
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -30,8 +26,8 @@ jobs:
 
       - name: Add plugin to userplugins
         run: |
-          mkdir -p "vencord/src/userplugins/${PLUGIN_DIRNAME}"
-          rsync -a --exclude='.git' --exclude='.github' "plugin/${PLUGIN_DIRNAME}" "vencord/src/userplugins"
+          mkdir -p "vencord/src/userplugins/videoGuardBypasser"
+          rsync -a "plugin/vencord/" "vencord/src/userplugins/videoGuardBypasser"
 
       # pnpm version is read from the "packageManager" field in Vencord's package.json
       - name: Setup pnpm
