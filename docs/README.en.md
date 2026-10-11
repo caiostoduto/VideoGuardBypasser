@@ -23,21 +23,43 @@ An educational proof of concept for studying two client-side voice and screensha
 
 #### Linux/MacOS
 
-Requirements:
-- git
-- curl (or wget)
+Requirements: `git` and `curl` or `wget`.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
+The installer uses `~/Vencord` by default. Pass options through `bash -s --` to use another checkout or language:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh \
+  | bash -s -- --vencord-dir "$HOME/src/Vencord" --lang pt
+```
+
+Supported options are `--vencord-dir PATH` and `--lang en|pt` (also accepted as `--vencord-dir=PATH` and `--lang=pt`). The language is detected from the system locale when `--lang` is omitted.
+
 #### Windows (PowerShell)
 
-Run this in PowerShell. The installer uses `winget` to offer Git for Windows if Git is missing; `curl.exe` or `wget.exe` is also required.
+Run this in an interactive PowerShell window. Git is required; if it is missing, the installer offers to install Git for Windows with `winget`. `winget.exe` is needed for that option. `curl.exe` or `wget.exe` is also required.
 
 ```powershell
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
+
+The default Vencord checkout is `$HOME\Vencord`. To pass a different path or select a language, download and invoke the script block with parameters:
+
+```powershell
+$installer = irm 'https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1'
+& ([scriptblock]::Create($installer)) -VencordDir "$HOME\src\Vencord" -Language pt
+```
+
+`-VencordDir` accepts a checkout path and `-Language` accepts `en` or `pt`. If PowerShell blocks a saved `.ps1` file because of the execution policy, you can allow scripts for the current PowerShell window only with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`; closing the window resets that setting.
+
+#### What the automatic installer does
+
+It clones Vencord into the default path (or updates the existing checkout after asking), reads the required Node.js and pnpm versions from Vencord's `package.json`, installs the plugin, and builds the selected target. It checks for a suitable Node.js and pnpm first. If either is missing or too old, it asks before downloading/installing it locally: Node.js uses an LTS release that meets Vencord's minimum version (about 100 MB installed), and pnpm uses the version required by Vencord (about 10 MB installed). These tools are stored under `~/.local/share/vencord-installer/` on Linux/macOS or `%LOCALAPPDATA%\vencord-installer\` on Windows, and are added to `PATH` for the installer run only.
+
+The installer asks which target to build. For the Discord app target, follow the injector prompts. When it finishes, restart Discord and enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**. For Vesktop and web builds, it prints Vencord's custom-build instructions.
 
 ###  Manual
 
@@ -47,18 +69,13 @@ This is a Vencord userplugin, so it must be built as part of a Vencord source ch
 git clone https://github.com/Vendicated/Vencord
 cd Vencord
 pnpm install --frozen-lockfile
+mkdir -p src/userplugins/videoGuardBypasser
+curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
+pnpm build
 pnpm inject
 ```
 
-Copy this repository's `vencord` folder content into `<Vencord checkout>/src/userplugins/videoGuardBypasser`, so the plugin's entry point is at `src/userplugins/videoGuardBypasser/index.ts`. From the Vencord checkout, build for your target platform:
-
-```sh
-mkdir src/userplugins/videoGuardBypasser
-curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
-pnpm build # or `pnpm buildWeb` for a web build
-```
-
-After rebuilding, restart Discord and enable **VideoGuardBypasser** in Vencord's plugin settings.
+For a web build, use `pnpm buildWeb` instead of `pnpm build`; follow the custom-build guide to load it in the browser. After installing the Discord app build, restart Discord and enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**.
 
 ## Settings
 

@@ -23,21 +23,43 @@ Este é um proof of concept educacional para estudar dois fluxos do cliente do D
 
 #### Linux/MacOS
 
-Requisitos:
-- git
-- curl (ou wget)
+Requisitos: `git` e `curl` ou `wget`.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
+Por padrão, o instalador usa `~/Vencord`. Passe opções por `bash -s --` para usar outro checkout ou idioma:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh \
+  | bash -s -- --vencord-dir "$HOME/src/Vencord" --lang pt
+```
+
+As opções aceitas são `--vencord-dir CAMINHO` e `--lang en|pt` (também aceitam o formato `--vencord-dir=CAMINHO` e `--lang=pt`). Se `--lang` for omitido, o idioma é detectado pela localidade do sistema.
+
 #### Windows (PowerShell)
 
-Execute este comando no PowerShell. Se o Git estiver ausente, o instalador oferece instalá-lo pelo `winget`; também é necessário ter `curl.exe` ou `wget.exe`.
+Execute em uma janela interativa do PowerShell. O Git é obrigatório; se estiver ausente, o instalador oferece instalá-lo pelo `winget`. `winget.exe` é necessário para essa opção. Também é preciso ter `curl.exe` ou `wget.exe`.
 
 ```powershell
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
+
+O checkout padrão do Vencord fica em `$HOME\Vencord`. Para indicar outro caminho ou escolher o idioma, baixe e execute o script com parâmetros:
+
+```powershell
+$installer = irm 'https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1'
+& ([scriptblock]::Create($installer)) -VencordDir "$HOME\src\Vencord" -Language pt
+```
+
+`-VencordDir` recebe o caminho do checkout e `-Language` aceita `en` ou `pt`. Se o PowerShell bloquear um arquivo `.ps1` salvo devido à política de execução, permita scripts apenas na janela atual com `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`; ao fechar a janela, a configuração é revertida.
+
+#### O que o instalador automático faz
+
+Ele clona o Vencord no caminho padrão (ou, após perguntar, atualiza o checkout existente), lê as versões necessárias do Node.js e do pnpm em `package.json`, instala o plugin e compila o destino escolhido. Primeiro, verifica se já há versões compatíveis do Node.js e do pnpm. Se algum estiver ausente ou desatualizado, pede confirmação antes de instalar localmente: usa uma versão LTS do Node.js que atenda ao requisito mínimo do Vencord (cerca de 100 MB instalado) e a versão do pnpm exigida pelo Vencord (cerca de 10 MB instalado). Esses programas ficam em `~/.local/share/vencord-installer/` no Linux/macOS ou `%LOCALAPPDATA%\vencord-installer\` no Windows e são adicionados ao `PATH` apenas durante a execução do instalador.
+
+O instalador pergunta qual destino deve compilar. Para o aplicativo Discord, siga as instruções do injetor. Ao terminar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser**. Para Vesktop e Web, ele mostra as instruções de build personalizado do Vencord.
 
 ### Manualmente
 
@@ -47,18 +69,13 @@ Este é um userplugin do Vencord e precisa ser compilado como parte de um checko
 git clone https://github.com/Vendicated/Vencord
 cd Vencord
 pnpm install --frozen-lockfile
+mkdir -p src/userplugins/videoGuardBypasser
+curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
+pnpm build
 pnpm inject
 ```
 
-Copie o conteúdo da pasta `vencord` deste repositório para `<checkout do Vencord>/src/userplugins/videoGuardBypasser/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
-
-```sh
-mkdir src/userplugins/videoGuardBypasser
-curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
-pnpm build # ou `pnpm buildWeb` para versão web
-```
-
-Depois do build, reinicie o Discord e habilite **VideoGuardBypasser** nas configurações de plugins do Vencord.
+Para uma build Web, use `pnpm buildWeb` no lugar de `pnpm build` e siga o guia de build personalizado para carregá-la no navegador. Depois de instalar a build do aplicativo Discord, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser**.
 
 ## Configurações
 
