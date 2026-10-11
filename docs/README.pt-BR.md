@@ -14,22 +14,33 @@ Este é um proof of concept educacional para estudar dois fluxos do cliente do D
 - Ao iniciar, define a variante `-1` (desativada) para o experimento `2026-08-video-guard`. Esse experimento controla uma barreira na interface do cliente que pode impedir o compartilhamento de tela.
 - Durante a conexão a um canal de voz, o cliente se comunica com um websocket `*.discord.media`, recebe o endereço e a porta de um RTC/SFU, conecta-se a esse RTC/SFU e, em seguida, informa seu endereço IPv4 ao websocket. Este plugin intercepta a resposta de `selectProtocol` e substitui o endereço e a porta por valores configurados antes que o cliente os informe. A política de localização do Discord trata o IPv4 reportado como o endereço do cliente e, por isso, considera a localização do endereço substituto em vez da localização real do cliente.
 
-## Instalação
+## Instalação (Vencord)
 
 > [!WARNING]
 > Esta ferramenta pode infringir os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
 
 Este é um userplugin do Vencord e precisa ser compilado como parte de um checkout do código-fonte do Vencord; não pode ser compilado como um pacote TypeScript independente. Se você ainda não configurou um checkout do código-fonte, siga primeiro o guia [Building Vencord](https://docs.vencord.dev/installing/#building-vencord). As [instruções para plugins personalizados](https://docs.vencord.dev/installing/custom-plugins/) explicam em mais detalhes a estrutura de `src/userplugins`.
 
-Copie a pasta `videoGuardBypasser` deste repositório para `<checkout do Vencord>/src/userplugins/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
-
 ```sh
-pnpm build
+git clone https://github.com/Vendicated/Vencord
+cd Vencord
+pnpm install --frozen-lockfile
+pnpm inject
 ```
 
-Para a versão web, use `pnpm buildWeb`. Depois do build, reinicie o Discord e habilite **VideoGuardBypasser** nas configurações de plugins do Vencord.
+Copie o conteúdo da pasta `vencord` deste repositório para `<checkout do Vencord>/src/videoGuardBypasser/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
+
+```sh
+mkdir src/userplugins/videoGuardBypasser
+curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
+pnpm build # ou `pnpm buildWeb` para versão web
+```
+
+Depois do build, reinicie o Discord e habilite **VideoGuardBypasser** nas configurações de plugins do Vencord.
 
 ## Configurações
 
-- **Subnets**: faixas IPv4 em notação CIDR, separadas por espaços em branco. O plugin escolhe um endereço entre as faixas configuradas. Para prefixos até `/30`, os endereços de rede e broadcast são excluídos. Se nenhuma faixa for válida, uma notificação de erro é exibida e o endereço permanece inalterado.
-- **Port range**: intervalo inclusivo no formato `mínimo-máximo`. Os dois extremos devem estar entre 1024 e 65535; intervalos que incluam portas reservadas (0–1023) são rejeitados e usam o padrão `10000-20000`, com uma notificação de erro. Os extremos podem ser informados em ordem inversa.
+| Configuração | Valor padrão | Descrição |
+| --- | --- | --- |
+| **Subnets** | `190.98.192.0/18` | Faixas IPv4 em notação CIDR, separadas por espaços. |
+| **Port range** | `10000-20000` | Intervalo inclusivo no formato `mínimo-máximo`; ambas as portas devem estar entre 1024 e 65535. |
