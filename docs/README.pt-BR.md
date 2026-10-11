@@ -19,6 +19,28 @@ Este é um proof of concept educacional para estudar dois fluxos do cliente do D
 > [!WARNING]
 > Esta ferramenta pode infringir os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
 
+### Automaticamente
+
+#### Linux/MacOS
+
+Requisitos:
+- git
+- curl (ou wget)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
+```
+
+#### Windows (PowerShell)
+
+Execute este comando no PowerShell. Se o Git estiver ausente, o instalador oferece instalá-lo pelo `winget`; também é necessário ter `curl.exe` ou `wget.exe`.
+
+```powershell
+irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
+```
+
+### Manualmente
+
 Este é um userplugin do Vencord e precisa ser compilado como parte de um checkout do código-fonte do Vencord; não pode ser compilado como um pacote TypeScript independente. Se você ainda não configurou um checkout do código-fonte, siga primeiro o guia [Building Vencord](https://docs.vencord.dev/installing/#building-vencord). As [instruções para plugins personalizados](https://docs.vencord.dev/installing/custom-plugins/) explicam em mais detalhes a estrutura de `src/userplugins`.
 
 ```sh
@@ -28,7 +50,7 @@ pnpm install --frozen-lockfile
 pnpm inject
 ```
 
-Copie o conteúdo da pasta `vencord` deste repositório para `<checkout do Vencord>/src/videoGuardBypasser/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
+Copie o conteúdo da pasta `vencord` deste repositório para `<checkout do Vencord>/src/userplugins/videoGuardBypasser/`, de forma que o ponto de entrada do plugin fique em `src/userplugins/videoGuardBypasser/index.ts`. No checkout do Vencord, faça o build para a plataforma desejada:
 
 ```sh
 mkdir src/userplugins/videoGuardBypasser

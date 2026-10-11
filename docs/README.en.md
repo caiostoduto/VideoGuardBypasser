@@ -19,6 +19,26 @@ An educational proof of concept for studying two client-side voice and screensha
 > [!WARNING]
 > This tool might be against [Discord's ToS](https://discord.com/terms). Use it at your own risk.
 
+### Automatic
+
+#### Linux/MacOS
+
+Requirements:
+- git
+- curl (or wget)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
+```
+
+#### Windows (PowerShell)
+
+Run this in PowerShell. The installer uses `winget` to offer Git for Windows if Git is missing; `curl.exe` or `wget.exe` is also required.
+
+```powershell
+irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
+```
+
 ###  Manual
 
 This is a Vencord userplugin, so it must be built as part of a Vencord source checkout; it cannot be compiled as a standalone TypeScript package. If you have not set up a source checkout yet, follow Vencord's [Building Vencord guide](https://docs.vencord.dev/installing/#building-vencord) first. The [custom plugin instructions](https://docs.vencord.dev/installing/custom-plugins/) describe the `src/userplugins` layout in more detail.
