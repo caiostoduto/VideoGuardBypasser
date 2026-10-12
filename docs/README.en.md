@@ -2,7 +2,7 @@
 
 <p align="center"><strong>English</strong> · <a href="/docs/README.pt-BR.md">Português (Brasil)</a></p>
 
-This plugin allows Discord users in Brazil to restore Go Live and video chat features<sup>[*](https://discord.com/blog/a-letter-to-the-discord-community-in-brazil)</sup>. It does so by exploiting a small vulnerability in Discord's implementation of location-based restriction policies.
+This plugin allows Discord users in Brazil to restore Go Live and video chat features<sup>[∗](https://discord.com/blog/a-letter-to-the-discord-community-in-brazil)</sup>. It does so by exploiting a small vulnerability in Discord's implementation of location-based restriction policies.
 
 > [!NOTE]
 > This repository is intended purely for educational purposes.
@@ -17,9 +17,9 @@ This repository contains a [Vencord](https://vencord.dev/) plugin (a Discord cli
 
 This is the code that runs on your computer and handles interaction between the user and the server. Since it runs locally, it is easy to modify. For this reason, many user-created modifications add new features to the client, as Vencord itself does.
 
-The restriction imposed by Discord in its client is a simple hidden "flag" (`2026-08-video-guard`[^1]) that determines how Discord behaves based on its value. The value is set when the application starts, based on your IP address. If the flag's value is `-1`, Discord behaves as if the restriction does not apply to you, and its interface remains unblocked. If the value is different, the interface visually disables the buttons for turning on your camera and sharing your screen, and also hides other people's screen shares.
+The restriction imposed by Discord in its client is a simple hidden "flag" (`2026-08-video-guard`<sup>[∗](https://github.com/EduardoVasconceloss/StreamFix/blob/4ab98977fa15e6c841106ef40b89c5034938a02d/streamFix/tunnel/trava.ts#L24)</sup>) that determines how Discord behaves based on its value. The value is set when the application starts, based on your IP address. If the flag's value is `-1`, Discord behaves as if the restriction does not apply to you, and its interface remains unblocked. If the value is different, the interface visually disables the buttons for turning on your camera and sharing your screen, and also hides other people's screen shares.
 
-To get around this, the plugin simply forces the flag's value to `-1`, removing the visual block implemented in a way that cannot be traced[^2].
+To get around this, the plugin simply forces the flag's value to `-1`, removing the visual block implemented in a way that cannot be traced<sup>[∗](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L27)</sup>.
 
 ### Server-side
 
@@ -27,9 +27,9 @@ This refers to Discord's servers, and obviously it is not possible to modify the
 
 When you join a call (or click to watch a screen share) in Discord, your client (the application) exchanges messages over WebSocket Secure with the media server you want to connect to (`*.discord.media`), requesting a WebRTC connection (the calling protocol used by Discord) with the other peers. While the client and server exchange these messages, the client establishes a connection with Interactive Connectivity Establishment (ICE), which returns the client's public IPv4 address. Finally, the client sends this IP address to the media server in the message exchange. The server receives the address, infers your location from it, and, if necessary, applies its location-based restriction policies to prevent you from viewing other people's streams or other people from viewing your stream.
 
-This system has a well-known vulnerability[^3]: data sent by the client should never be trusted without validation. As described in the previous [Client-side](#client-side) section, users can modify client behavior, including its communication with the server.
+This system has a well-known vulnerability<sup>[∗](https://cwe.mitre.org/data/definitions/20.html)</sup>: data sent by the client should never be trusted without validation. As described in the previous [Client-side](#client-side) section, users can modify client behavior, including its communication with the server.
 
-To get around the restriction applied by the media server, the plugin intercepts the message the client sends with its IP address and changes its contents to include a different address that is not subject to the restriction[^4], because the server does not validate it correctly.
+To get around the restriction applied by the media server, the plugin intercepts the message the client sends with its IP address and changes its contents to include a different address that is not subject to the restriction<sup>[∗](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L117)</sup>, because the server does not validate it correctly.
 
 ## Installation (Vencord)
 
@@ -59,7 +59,7 @@ Open a PowerShell window and run:
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
 
-After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, you will need to run the command again after every Discord update[^5].
+After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, you will need to run the command again after every Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>To specify the Vencord installation location</summary>
@@ -78,7 +78,7 @@ Prerequisites: `git` and `curl` or `wget`
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
-After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, you will need to run the command again after every Discord update[^5].
+After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, you will need to run the command again after every Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>To specify the Vencord installation location</summary>
@@ -107,7 +107,7 @@ pnpm build # or pnpm buildWeb
 pnpm inject # Discord Desktop only
 ```
 
-After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, after every Discord update you will need to run **only** the `pnpm inject` line[^5].
+After installation, restart Discord, enable **VideoGuardBypasser** under **Settings → Plugins → VideoGuardBypasser**, then restart the client once more. If you installed it in Discord Desktop, after every Discord update you will need to run **only** the `pnpm inject` line<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 ## Settings
 
@@ -115,9 +115,3 @@ After installation, restart Discord, enable **VideoGuardBypasser** under **Setti
 | --- | --- | --- |
 | **Subnets** | `190.98.192.0/18` | IPv4 ranges in CIDR notation, separated by spaces. |
 | **Port range** | `10000-20000` | Inclusive range in `minimum-maximum` format; both ports must be between 1024 and 65535. |
-
-[^1]: [github.com/EduardoVasconceloss/StreamFix/streamFix/tunnel/trava.ts](https://github.com/EduardoVasconceloss/StreamFix/blob/4ab98977fa15e6c841106ef40b89c5034938a02d/streamFix/tunnel/trava.ts#L24)
-[^2]: [setVideoGuardExperiment()](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L27)
-[^3]: [Improper input validation (CWE-20)](https://cwe.mitre.org/data/definitions/20.html)
-[^4]: [onSelectProtocol()](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L117)
-[^5]: [Reddit: Issues after every Discord update](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)
