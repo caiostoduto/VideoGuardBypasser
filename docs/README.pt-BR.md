@@ -1,5 +1,10 @@
 <h1 align="center">VideoGuardBypasser</h1>
 
+<p align="center">
+    <a href="https://discord.com"><img src="https://img.shields.io/badge/Discord-242629?logo=discord" alt="Discord"/></a>
+    <a href="https://vencord.dev"><img src="https://img.shields.io/badge/Vencord-242629?logo=vencord" alt="Vencord"/></a>
+</p>
+
 <p align="center"><a href="/docs/README.en.md">English</a> · <strong>Português (Brasil)</strong></p>
 
 Esse plugin permite que usuários do Discord consigam reestabelecer os recursos Go Live e chat de vídeo no Brasil<sup>[∗](https://discord.com/blog/a-letter-to-the-discord-community-in-brazil)</sup>. Para isso ele explora uma pequena vulnerabilidade na implementação de política de restrição por localização implementada pelo Discord.
