@@ -1,81 +1,114 @@
-<div align="right">
+<h1 align="center">VideoGuardBypasser</h1>
 
-[English](/docs/README.en.md) · **Português (Brasil)**
+<p align="center"><a href="/docs/README.en.md">English</a> · <strong>Português (Brasil)</strong></p>
 
-</div>
-
-# VideoGuardBypasser
+Esse plugin permite que usuários do Discord consigam reestabelecer os recursos Go Live e chat de vídeo no Brasil<sup>[*](https://discord.com/blog/a-letter-to-the-discord-community-in-brazil)</sup>. Para isso ele explora uma pequena vulnerabilidade na implementação de política de restrição por localização implementada pelo Discord.
 
 > [!NOTE]
-> O objetivo é demonstrar que os dados reportados pelo cliente estão sob controle do próprio cliente: o servidor não deve confiar em um endereço informado pelo usuário como prova de sua localização, nem usá-lo como único critério para decisões de política na camada de aplicação (OSI, camada 7).
+> Esse repositório tem o intuito puramente educativo.
 
-Este é um proof of concept educacional para estudar dois fluxos do cliente do Discord relacionados a voz e compartilhamento de tela. Ele tem duas partes independentes:
+<p align="center"><a href="#como-funciona-técnico">Como funciona (técnico)</a> · <a href="#instalação-vencord">Instalação</a> · <a href="#configurações">Configurações</a></p>
 
-- Ao iniciar, define a variante `-1` (desativada) para o experimento `2026-08-video-guard`. Esse experimento controla uma barreira na interface do cliente que pode impedir o compartilhamento de tela.
-- Durante a conexão a um canal de voz, o cliente se comunica com um websocket `*.discord.media`, recebe o endereço e a porta de um RTC/SFU, conecta-se a esse RTC/SFU e, em seguida, informa seu endereço IPv4 ao websocket. Este plugin intercepta a resposta de `selectProtocol` e substitui o endereço e a porta por valores configurados antes que o cliente os informe. A política de localização do Discord trata o IPv4 reportado como o endereço do cliente e, por isso, considera a localização do endereço substituto em vez da localização real do cliente.
+## Como funciona (técnico)
+
+Esse repositório consiste em um plugin de [Vencord](https://vencord.dev/) (modificador de cliente Discord) que altera algumas características do cliente ([Discord Desktop](https://discord.com/download), [Vesktop](https://vesktop.dev/) ou [Navegador](https://discord.com/app)) permitindo ultrapassar as barreiras impostas. A barreira é composta por duas partes:
+
+### Lado cliente (client-side)
+
+Esse lado é o código executado no nosso computador e é responsável pela interação entre o usuário e o servidor. Como ele é executado localmente, ele é facilmente modificável, e tanto por conta disso existem inúmeras modificações criadas por usuários para incrementá-lo com diversas funcionalidades novas, como o próprio Vencord faz.
+
+Nisso, a barreira imposta pelo Discord em seu cliente é uma simples "chave" (`2026-08-video-guard`[^1]) escondida que define como o Discord se comportará com base em seu valor, que é definido ao inicializar o aplicativo baseado no seu endereço IP. Se o valor da chave for `-1`, o Discord se comportará como se você não se aplicasse à restrição criada por eles e sua interface se manterá sem bloqueios, mas caso o valor da chave for diferente a interface bloqueará visualmente o botão de ligar a câmera e compartilhar a tela e também esconderá se outras pessoas estiverem compartilhando a tela também.
+
+Então, para circunvir isso o plugin simplesmente altera o valor dessa chave forçadamente para `-1`, se livrando do bloqueio visual implementado de forma irrastreável[^2].
+
+### Lado servidor (server-side)
+
+Esse lado são os servidores do Discord e obviamente não é possível modificar o código que está rodando neles.
+
+Quando você interage para entrar numa ligação (ou clica para assistir uma tela) pelo Discord, o seu cliente (aplicativo) faz uma troca de mensagens (WebSocket Secure) para o servidor de mídia ao qual você deseja fazer conexão (`*discord.media`) solicitando para estabelecer a conexão WebRTC (protocolo de ligação usado pelo Discord) com os outros pares. Enquanto o cliente e o servidor fazem essa troca de mensagens o cliente estabelece uma conexão com o Interactive Connectivity Establishment (ICE), que por sua vez retorna para o cliente qual seu endereço IPv4 público. Por fim, esse endereço de IP é enviado pelo cliente para o servidor de mídia na troca de mensagens, e o servidor por sua vez recebe esse endereço IP e, por meio dele, infere sua localização e, se necessário, aplica suas políticas de restrição por localização para não permitir que você consiga ver a transmissão de outras pessoas, e nem que as outras pessoas consigam ver sua transmissão.
+
+Esse sistema possui uma vulnerabilidade muito conhecida[^3]: nunca se deve confiar em dados enviados pelo cliente sem validá-los. O motivo é que, como você viu anteriormente na seção anterior [Lado servidor (server-side)](#lado-cliente-client-side) o usuário pode modificar o comportamento cliente, incluindo a sua comunicação com o servidor.
+
+Então, para circunvir a restrição feita pelo servidor de mídia, o plugin intercepta a mensagem que o cliente manda contendo o seu endereço IP e o altera o conteúdo da mensagem para conter um endereço diferente do seu que não sofre da política de restrição[^4], já que o servidor não o valida corretamente.
 
 ## Instalação (Vencord)
 
 > [!WARNING]
-> Esta ferramenta pode infringir os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
+> O uso desse plugin pode infringir os [Termos de Serviço do Discord](https://discord.com/terms). Use por sua conta e risco.
 
-### Automaticamente
+### Script automatizado
 
-#### Linux/MacOS
+Por conta da arquitetura do Vencord, a instalação de um plugin customizado não é tão simples, então para simplificar o processo de instalação foi criado um script interativo que automatiza todos os passos do processo.
 
-Requisitos: `git` e `curl` ou `wget`.
+<details closed>
+<summary>O que o script faz</summary>
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
-```
-
-Por padrão, o instalador usa `~/Vencord`. Passe opções por `bash -s --` para usar outro checkout ou idioma:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh \
-  | bash -s -- --vencord-dir "$HOME/src/Vencord" --lang pt
-```
-
-As opções aceitas são `--vencord-dir CAMINHO` e `--lang en|pt` (também aceitam o formato `--vencord-dir=CAMINHO` e `--lang=pt`). Se `--lang` for omitido, o idioma é detectado pela localidade do sistema.
+1. Verifica se os pré-requisitos estão instalados
+2. (Windows) Instala `git` via `winget` caso o usuário não o tenha instalado
+3. Instala Node.js e pnpm localmente caso necessário (se não está instalado ou desatualizado)
+4. Baixa o plugin
+5. Compila o Vencord com o plugin
+6. (Discord Desktop) Injeta o Vencord no Discord
+</details>
 
 #### Windows (PowerShell)
 
-Execute em uma janela interativa do PowerShell. O Git é obrigatório; se estiver ausente, o instalador oferece instalá-lo pelo `winget`. `winget.exe` é necessário para essa opção. Também é preciso ter `curl.exe` ou `wget.exe`.
+Abra uma janela do PowerShell e execute o comando:
 
 ```powershell
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
 
-O checkout padrão do Vencord fica em `$HOME\Vencord`. Para indicar outro caminho ou escolher o idioma, baixe e execute o script com parâmetros:
+Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente[^5].
+
+<details closed>
+<summary>Caso queira especificar o local de instalação do Vencord</summary>
 
 ```powershell
 $installer = irm 'https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1'
-& ([scriptblock]::Create($installer)) -VencordDir "$HOME\src\Vencord" -Language pt
+& ([scriptblock]::Create($installer)) -VencordDir "$HOME\Vencord"
+```
+</details>
+
+
+#### Linux/MacOS
+
+Pré-requisitos: `git` e `curl` ou `wget`
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
-`-VencordDir` recebe o caminho do checkout e `-Language` aceita `en` ou `pt`. Se o PowerShell bloquear um arquivo `.ps1` salvo devido à política de execução, permita scripts apenas na janela atual com `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`; ao fechar a janela, a configuração é revertida.
+Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente[^5].
 
-#### O que o instalador automático faz
+<details closed>
+<summary>Caso queira especificar o local de instalação do Vencord</summary>
 
-Ele clona o Vencord no caminho padrão (ou, após perguntar, atualiza o checkout existente), lê as versões necessárias do Node.js e do pnpm em `package.json`, instala o plugin e compila o destino escolhido. Primeiro, verifica se já há versões compatíveis do Node.js e do pnpm. Se algum estiver ausente ou desatualizado, pede confirmação antes de instalar localmente: usa uma versão LTS do Node.js que atenda ao requisito mínimo do Vencord (cerca de 100 MB instalado) e a versão do pnpm exigida pelo Vencord (cerca de 10 MB instalado). Esses programas ficam em `~/.local/share/vencord-installer/` no Linux/macOS ou `%LOCALAPPDATA%\vencord-installer\` no Windows e são adicionados ao `PATH` apenas durante a execução do instalador.
-
-O instalador pergunta qual destino deve compilar. Para o aplicativo Discord, siga as instruções do injetor. Ao terminar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser**. Para Vesktop e Web, ele mostra as instruções de build personalizado do Vencord.
+```sh
+curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh \
+  | bash -s -- --vencord-dir "$HOME/Vencord"
+```
+</details>
 
 ### Manualmente
 
-Este é um userplugin do Vencord e precisa ser compilado como parte de um checkout do código-fonte do Vencord; não pode ser compilado como um pacote TypeScript independente. Se você ainda não configurou um checkout do código-fonte, siga primeiro o guia [Building Vencord](https://docs.vencord.dev/installing/#building-vencord). As [instruções para plugins personalizados](https://docs.vencord.dev/installing/custom-plugins/) explicam em mais detalhes a estrutura de `src/userplugins`.
+Este é um _userplugin_ do [Vencord](https://vencord.dev) e precisa ser compilado como parte de um checkout do código-fonte dele. Antes de prosseguir, sugiro ler ao menos o aritgo [Building Vencord](https://docs.vencord.dev/installing/#building-vencord).
 
 ```sh
+# Building Vencord (https://docs.vencord.dev/installing/#building-vencord)
 git clone https://github.com/Vendicated/Vencord
 cd Vencord
 pnpm install --frozen-lockfile
+
+# Custom Plugins (https://docs.vencord.dev/installing/custom-plugins/)
 mkdir -p src/userplugins/videoGuardBypasser
 curl https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts -o src/userplugins/videoGuardBypasser/index.ts
-pnpm build
-pnpm inject
+
+pnpm build # ou pnpm buildWeb
+pnpm inject # apenas se Discord Desktop
 ```
 
-Para uma build Web, use `pnpm buildWeb` no lugar de `pnpm build` e siga o guia de build personalizado para carregá-la no navegador. Depois de instalar a build do aplicativo Discord, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser**.
+Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar **apenas** a linha `pnpm inject`[^5].
 
 ## Configurações
 
@@ -83,3 +116,9 @@ Para uma build Web, use `pnpm buildWeb` no lugar de `pnpm build` e siga o guia d
 | --- | --- | --- |
 | **Subnets** | `190.98.192.0/18` | Faixas IPv4 em notação CIDR, separadas por espaços. |
 | **Port range** | `10000-20000` | Intervalo inclusivo no formato `mínimo-máximo`; ambas as portas devem estar entre 1024 e 65535. |
+
+[^1]: [github.com/EduardoVasconceloss/StreamFix/streamFix/tunnel/trava.ts](https://github.com/EduardoVasconceloss/StreamFix/blob/4ab98977fa15e6c841106ef40b89c5034938a02d/streamFix/tunnel/trava.ts#L24)
+[^2]: [setVideoGuardExperiment()](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L27)
+[^3]: [Improper input validation (CWE-20)](https://cwe.mitre.org/data/definitions/20.html)
+[^4]: [onSelectProtocol()](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L117)
+[^5]: [Reddit: Issues after every Discord update](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)
