@@ -454,8 +454,8 @@ case "$CHOICE" in
         pnpm inject </dev/tty \
             || die "Injection failed." "Falha na injeção."
         echo
-        FINAL_EN="Restart Discord to load the modification. Enable the plugin at Settings → Plugins → VideoGuardBypasser."
-        FINAL_PT="Reinicie o Discord para carregar a modificação. Ative o plugin em Configurações → Plugins → VideoGuardBypasser."
+        FINAL_EN="Restart Discord to load the modification."
+        FINAL_PT="Reinicie o Discord para carregar a modificação."
         ;;
     2)  # Vesktop
         SPIN_DONE_EN="Vencord built" SPIN_DONE_PT="Vencord compilado" \

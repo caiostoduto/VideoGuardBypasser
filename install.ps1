@@ -538,8 +538,8 @@ try {
             $ErrorActionPreference = 'Stop'
             if ($injectRc -ne 0) { Stop-Install (T 'Injection failed.' 'Falha na injeção.') }
             Write-Host ''
-            $final = T 'Restart Discord to load the modification. Enable the plugin at Settings → Plugins → VideoGuardBypasser.' `
-                       'Reinicie o Discord para carregar a modificação. Ative o plugin em Configurações → Plugins → VideoGuardBypasser.'
+            $final = T 'Restart Discord to load the modification.' `
+                       'Reinicie o Discord para carregar a modificação.'
         }
         '2' {
             if (-not (Invoke-Pnpm 'Building Vencord...' 'Compilando o Vencord...' 'Vencord built' 'Vencord compilado' @('build'))) {

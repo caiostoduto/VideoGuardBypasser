@@ -88,6 +88,7 @@ export default definePlugin({
     name: "VideoGuardBypasser",
     description: "Educational PoC: disables the Video Guard screenshare gate and replaces the IPv4 address and port reported to the voice websocket.",
     authors: [{ name: "Caio Stoduto", id: 0n }],
+    enabledByDefault: true,
     settings,
 
     start() {

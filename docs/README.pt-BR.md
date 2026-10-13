@@ -64,7 +64,7 @@ Abra uma janela do PowerShell e execute o comando:
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
 
-Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>Caso queira especificar o local de instalação do Vencord</summary>
@@ -84,7 +84,7 @@ Pré-requisitos: `git` e `curl` ou `wget`
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
-Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar o comando novamente<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>Caso queira especificar o local de instalação do Vencord</summary>
@@ -113,7 +113,7 @@ pnpm build # ou pnpm buildWeb
 pnpm inject # apenas se Discord Desktop
 ```
 
-Depois de instalar, reinicie o Discord e habilite **VideoGuardBypasser** em **Configurações → Plugins → VideoGuardBypasser** e reinicie o cliente mais uma vez. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar **apenas** a linha `pnpm inject`<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, após toda atualização do Discord será necessário executar **apenas** a linha `pnpm inject`<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 ## Configurações
 
