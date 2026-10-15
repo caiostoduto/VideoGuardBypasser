@@ -392,6 +392,52 @@ function Show-DocsLink {
     Write-Host ("    " + (T "Built files: $VencordDir\dist" "Arquivos gerados: $VencordDir\dist")) -ForegroundColor DarkGray
 }
 
+# ── Git ───────────────────────────────────────────────────────────────────────
+# Git may be installed but missing from this session's PATH (e.g. just installed)
+function Find-GitInKnownDirs {
+    foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env:LOCALAPPDATA 'Programs'))) {
+        if (-not $base) { continue }
+        $exe = Join-Path $base 'Git\cmd\git.exe'
+        if (Test-Path -LiteralPath $exe) { return $exe }
+    }
+    return $null
+}
+
+# Picks up PATH entries added by installers after this session started
+function Update-PathFromRegistry {
+    $current = $env:PATH -split ';'
+    $fresh = @([Environment]::GetEnvironmentVariable('Path', 'Machine'),
+               [Environment]::GetEnvironmentVariable('Path', 'User')) |
+        Where-Object { $_ } | ForEach-Object { $_ -split ';' } | Where-Object { $_ }
+    foreach ($p in $fresh) { if ($current -notcontains $p) { $env:PATH += ";$p" } }
+}
+
+function Install-Git {
+    $winget = Find-App 'winget.exe'
+    if (-not $winget) {
+        Stop-Install (T 'git is required, and winget is not available to install it. Install git and run this script again.' `
+                        'git é necessário, mas o winget não está disponível para instalá-lo. Instale o git e execute este script novamente.')
+    }
+    if (-not (Ask-YesNo 'Install Git for Windows with winget (~350 MB installed)?' `
+                        'Instalar o Git for Windows com winget (~350 MB instalado)?' $true)) {
+        Stop-Cancelled (T 'Git installation cancelled.' 'Instalação do Git cancelada.')
+    }
+    $ok = Invoke-Spin -En 'Installing Git for Windows...' -Pt 'Instalando o Git for Windows...' -Clear `
+        -File $winget -ArgList @('install', '--id', 'Git.Git', '--exact', '--source', 'winget', '--silent',
+                                 '--accept-package-agreements', '--accept-source-agreements')
+    if (-not $ok) { Stop-Install (T 'Git installation failed.' 'Falha ao instalar o Git.') }
+
+    Update-PathFromRegistry
+    $git = Find-App 'git.exe'
+    if (-not $git) { $git = Find-GitInKnownDirs }
+    if (-not $git) {
+        Stop-Install (T 'Git was installed but could not be found. Open a new terminal and run this script again.' `
+                        'O Git foi instalado, mas não foi encontrado. Abra um novo terminal e execute este script novamente.')
+    }
+    Add-ToPath (Split-Path -Parent $git)
+    return $git
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  Main
 # ══════════════════════════════════════════════════════════════════════════════
@@ -401,11 +447,19 @@ try {
     if ($S.Interactive) { try { Clear-Host } catch {} }
     Show-Banner
 
-    # 1 ── Git & curl/wget ─────────────────────────────────────────────────────
+        # 1 ── Git & curl/wget ─────────────────────────────────────────────────────
     Write-Section (T 'Checking requirements' 'Verificando requisitos')
+    $gitNote = ''
     $git = Find-App 'git.exe'
     if (-not $git) {
-        Stop-Install (T 'git is required but not installed. Install it and run this script again.' 'git é necessário, mas não está instalado. Instale-o e execute este script novamente.')
+        $known = Find-GitInKnownDirs
+        if ($known) {
+            $git = $known
+            Add-ToPath (Split-Path -Parent $known)
+        } else {
+            $git = Install-Git
+            $gitNote = T 'installed via winget' 'instalado via winget'
+        }
     }
     $S.Curl = Find-App 'curl.exe'
     $S.Wget = if ($S.Curl) { $null } else { Find-App 'wget.exe' }
@@ -419,7 +473,9 @@ try {
     $ErrorActionPreference = 'Stop'
     Write-Host -NoNewline '  '
     Write-Host -NoNewline '✔' -ForegroundColor Green
-    Write-Host -NoNewline " git $gitVer "
+    Write-Host -NoNewline " git $gitVer"
+    if ($gitNote) { Write-Host -NoNewline " ($gitNote)" -ForegroundColor DarkGray }
+    Write-Host -NoNewline ' '
     Write-Host -NoNewline '·' -ForegroundColor DarkGray
     Write-Host " $dlName $dlVer"
 
