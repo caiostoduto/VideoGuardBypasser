@@ -1,3 +1,9 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
@@ -11,7 +17,7 @@ function showConfigError(key: string, value: string, message: { en: string; ptBR
     notifiedErrors.set(key, value);
 
     const locale = LocaleStore.locale.toLowerCase();
-    showToast(locale.startsWith("pt") ? message.ptBR : message.en, "failure");
+    showToast({ text: locale.startsWith("pt") ? message.ptBR : message.en, variant: "critical" });
 }
 
 interface ApexExperimentStore {
