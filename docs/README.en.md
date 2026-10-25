@@ -64,7 +64,7 @@ Open a PowerShell window and run:
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
 
-After installation, restart Discord. If you installed it in Discord Desktop, you will need to run the command again after every Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+After installation, restart Discord. If you installed it in Discord Desktop, you might need to run the command again after a Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>To specify the Vencord installation location</summary>
@@ -83,7 +83,7 @@ Prerequisites: `git` and `curl` or `wget`
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
-After installation, restart Discord. If you installed it in Discord Desktop, you will need to run the command again after every Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+After installation, restart Discord. If you installed it in Discord Desktop, you might need to run the command again after a Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>To specify the Vencord installation location</summary>
@@ -112,7 +112,7 @@ pnpm build # or pnpm buildWeb
 pnpm inject # Discord Desktop only
 ```
 
-After installation, restart Discord. If you installed it in Discord Desktop, after every Discord update you will need to run **only** the `pnpm inject` line<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+After installation, restart Discord. If you installed it in Discord Desktop, you might need to run the command again after a Discord update<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 ## Settings
 
