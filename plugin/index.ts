@@ -200,7 +200,7 @@ export default definePlugin({
             replacement: [
                 {
                     match: /selectProtocol\((\i),(\i),(\i),(\i)\)\{/,
-                    replace: "selectProtocol($1,$2,$3,$4){$3=$self.onSelectProtocol(this,$2,$3);"
+                    replace: "selectProtocol($1,$2,$3,$4){$3=$self.onSelectProtocol(this,$1,$3);"
                 }
             ]
         }
@@ -220,6 +220,7 @@ export default definePlugin({
      * @returns The updated connection data
      */
     onSelectProtocol(_sock: unknown, protocol: string, data: object) {
+        console.log(`[Video Guard bypasser] before patch`, protocol, data);
         if (protocol !== "udp") return data;
 
         const address = randomIpFromSubnets(settings.store.subnets);
@@ -235,8 +236,7 @@ export default definePlugin({
         const { min, max } = resolvePortRange(settings.store.portRange);
         const port = randomInt(min, max);
 
-        console.log(`[Video Guard bypasser] selectProtocol`, data);
-
+        console.log(`[Video Guard bypasser] after patch`, data);
         return { ...data, address, port };
     }
 });
