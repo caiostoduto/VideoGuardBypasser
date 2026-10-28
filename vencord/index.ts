@@ -9,37 +9,34 @@ import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
 import { LocaleStore, showToast, UserStore } from "@webpack/common";
 
-const VIDEO_GUARD = "2026-08-video-guard";
-const notifiedErrors = new Map<string, string>();
+// ---------------------------------------------------------------------------
+// Constants & types
+// ---------------------------------------------------------------------------
 
-function showConfigError(key: string, value: string, message: { en: string; ptBR: string; }) {
-    if (notifiedErrors.get(key) === value) return;
-    notifiedErrors.set(key, value);
+const VIDEO_GUARD_EXPERIMENT = "2026-08-video-guard";
+const DISABLED_VARIANT = "-1";
 
-    const locale = LocaleStore.locale.toLowerCase();
-    showToast({ text: locale.startsWith("pt") ? message.ptBR : message.en, variant: "critical" });
-}
+const CIDR_PATTERN = /^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/;
+const PORT_RANGE_PATTERN = /^\s*(\d+)\s*-\s*(\d+)\s*$/;
 
-interface ApexExperimentStore {
+const VALID_PORTS: PortRange = { min: 1024, max: 65535 };
+const FALLBACK_PORTS: PortRange = { min: 10000, max: 20000 };
+
+interface PortRange { min: number; max: number; }
+interface AddressRange { first: number; count: number; }
+interface LocalizedMessage { en: string; ptBR: string; }
+
+interface ExperimentStore {
     getServerAssignment(type: string, id: string, experiment: string): { variantId: string; };
     createOverride(experiment: string, variant: string): void;
     // ...
 }
 
-/**
- * Sets the `VIDEO_GUARD` experiment to variant `-1` (disabled) for the current user, if it's not already set.
- * This client-side experiment gate can prevent the screenshare UI from starting.
- */
-function setVideoGuardExperiment(): void {
-    const user = UserStore.getCurrentUser();
-    if (!user) return;
+const ExperimentStore: ExperimentStore = findStoreLazy("ApexExperimentStore");
 
-    const store = findStoreLazy("ApexExperimentStore") as ApexExperimentStore;
-
-    if (store.getServerAssignment("user", user.id, VIDEO_GUARD).variantId !== "-1") {
-        store.createOverride(VIDEO_GUARD, "-1");
-    }
-}
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
 
 const settings = definePluginSettings({
     subnets: {
@@ -54,41 +51,141 @@ const settings = definePluginSettings({
     }
 });
 
+// ---------------------------------------------------------------------------
+// Config error reporting (each distinct bad value is toasted only once)
+// ---------------------------------------------------------------------------
+
+const lastReportedValue = new Map<string, string>();
+
+function reportConfigError(setting: string, value: string, message: LocalizedMessage): void {
+    if (lastReportedValue.get(setting) === value) return;
+    lastReportedValue.set(setting, value);
+
+    const isPortuguese = LocaleStore.locale.toLowerCase().startsWith("pt");
+    showToast({ text: isPortuguese ? message.ptBR : message.en, variant: "critical" });
+}
+
+function clearConfigError(setting: string): void {
+    lastReportedValue.delete(setting);
+}
+
+// ---------------------------------------------------------------------------
+// Experiment gate
+// ---------------------------------------------------------------------------
+
 /**
- * Generates a random IPv4 address from the given subnets in CIDR notation.
- * @param subnets A string containing IPv4 subnets in CIDR notation, separated by whitespace.
- * @returns A random IPv4 address as a string, or undefined if no valid subnets are provided.
+ * Sets the Video Guard experiment to the disabled variant for the current user,
+ * if it isn't already. This client-side gate can prevent the screenshare UI from starting.
+ */
+function disableVideoGuardExperiment(): void {
+    const user = UserStore.getCurrentUser();
+    if (!user) return;
+
+    const { variantId } = ExperimentStore.getServerAssignment("user", user.id, VIDEO_GUARD_EXPERIMENT);
+    if (variantId !== DISABLED_VARIANT) {
+        ExperimentStore.createOverride(VIDEO_GUARD_EXPERIMENT, DISABLED_VARIANT);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// IPv4 helpers
+// ---------------------------------------------------------------------------
+
+function randomInt(min: number, max: number): number {
+    return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function ipv4ToNumber(octets: number[]): number {
+    return octets.reduce((value, octet) => value * 256 + octet, 0);
+}
+
+function numberToIpv4(address: number): string {
+    return [24, 16, 8, 0]
+        .map(shift => Math.floor(address / 2 ** shift) % 256)
+        .join(".");
+}
+
+/**
+ * Parses a CIDR block into the range of usable host addresses.
+ * Network and broadcast addresses are excluded, except for /31 and /32 blocks.
+ */
+function parseCidr(cidr: string): AddressRange | null {
+    const match = cidr.match(CIDR_PATTERN);
+    if (!match) return null;
+
+    const octets = match[1].split(".").map(Number);
+    const prefix = Number(match[2]);
+    if (octets.some(octet => octet > 255) || prefix > 32) return null;
+
+    const blockSize = 2 ** (32 - prefix);
+    const network = Math.floor(ipv4ToNumber(octets) / blockSize) * blockSize;
+    const hasReservedAddresses = prefix <= 30;
+
+    return hasReservedAddresses
+        ? { first: network + 1, count: blockSize - 2 }
+        : { first: network, count: blockSize };
+}
+
+/**
+ * Picks a uniformly random IPv4 address across all the given subnets.
+ * @param subnets IPv4 subnets in CIDR notation, separated by whitespace.
+ * @returns The address, or undefined if no valid subnet was provided.
  */
 function randomIpFromSubnets(subnets: string): string | undefined {
-    const ranges: Array<{ first: number; count: number; }> = [];
+    const ranges = subnets
+        .split(/\s+/)
+        .map(parseCidr)
+        .filter((range): range is AddressRange => range !== null);
 
-    for (const line of subnets.split(/\s+/)) {
-        const match = line.trim().match(/^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/);
-        if (!match) continue;
+    const totalAddresses = ranges.reduce((sum, range) => sum + range.count, 0);
+    if (!totalAddresses) return undefined;
 
-        const octets = match[1].split(".").map(Number);
-        const prefix = Number(match[2]);
-        if (octets.some(octet => octet > 255) || prefix > 32) continue;
-
-        const address = octets.reduce((value, octet) => value * 256 + octet, 0);
-        const size = 2 ** (32 - prefix);
-        const network = Math.floor(address / size) * size;
-        const hostCount = prefix <= 30 ? size - 2 : size;
-        ranges.push({ first: network + (prefix <= 30 ? 1 : 0), count: hostCount });
-    }
-
-    const total = ranges.reduce((sum, range) => sum + range.count, 0);
-    if (!total) return;
-
-    let offset = Math.floor(Math.random() * total);
+    let offset = Math.floor(Math.random() * totalAddresses);
     for (const range of ranges) {
-        if (offset < range.count) {
-            const address = range.first + offset;
-            return [24, 16, 8, 0].map(shift => Math.floor(address / 2 ** shift) % 256).join(".");
-        }
+        if (offset < range.count) return numberToIpv4(range.first + offset);
         offset -= range.count;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Port helpers
+// ---------------------------------------------------------------------------
+
+function isValidPort(port: number): boolean {
+    return port >= VALID_PORTS.min && port <= VALID_PORTS.max;
+}
+
+/** Parses "min-max" into an ordered range, or null if malformed or out of bounds. */
+function parsePortRange(input: string): PortRange | null {
+    const match = input.match(PORT_RANGE_PATTERN);
+    if (!match) return null;
+
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    if (!isValidPort(first) || !isValidPort(second)) return null;
+
+    return { min: Math.min(first, second), max: Math.max(first, second) };
+}
+
+/** Returns the configured port range, falling back to the default (with a toast) if invalid. */
+function resolvePortRange(input: string): PortRange {
+    const range = parsePortRange(input);
+
+    if (range) {
+        clearConfigError("portRange");
+        return range;
+    }
+
+    reportConfigError("portRange", input, {
+        en: "Invalid port range. Use min-max with both ports from 1024 to 65535; using 10000-20000.",
+        ptBR: "Intervalo de portas inválido. Use mínimo-máximo com ambas entre 1024 e 65535; usando 10000-20000."
+    });
+    return FALLBACK_PORTS;
+}
+
+// ---------------------------------------------------------------------------
+// Plugin
+// ---------------------------------------------------------------------------
 
 export default definePlugin({
     name: "VideoGuardBypasser",
@@ -97,67 +194,49 @@ export default definePlugin({
     enabledByDefault: true,
     settings,
 
-    start() {
-        setVideoGuardExperiment();
-        console.log("[Video Guard bypasser] Started");
-    },
-
     patches: [
         {
             find: "Connect called with already existing websocket",
             replacement: [
                 {
                     match: /selectProtocol\((\i),(\i),(\i),(\i)\)\{/,
-                    replace: "selectProtocol($1,$2,$3,$4){$3=$self.onSelectProtocol(this,$3);"
+                    replace: "selectProtocol($1,$2,$3,$4){$3=$self.onSelectProtocol(this,$2,$3);"
                 }
             ]
         }
     ],
 
+    start() {
+        disableVideoGuardExperiment();
+        console.log(`[Video Guard bypasser] Started`);
+    },
+
     /**
      * Rewrites the address/port the client reports to the voice websocket after connecting to the RTC/SFU.
-     * The client reported IPv4 is used by the websocket for application-layer location policy censoring.
+     * The client-reported IPv4 is used by the websocket for application-layer location policy censoring.
      * @param _sock The socket
+     * @param protocol The connection protocol
      * @param data The connection data
      * @returns The updated connection data
      */
-    onSelectProtocol(_sock: unknown, data: {
-        address: string;
-        mode: string;
-        port: number;
-    }) {
+    onSelectProtocol(_sock: unknown, protocol: string, data: object) {
+        if (protocol !== "udp") return data;
+
         const address = randomIpFromSubnets(settings.store.subnets);
         if (!address) {
-            showConfigError("subnets", settings.store.subnets, {
+            reportConfigError("subnets", settings.store.subnets, {
                 en: "No valid IPv4 CIDR subnets configured. Check the Subnets setting.",
                 ptBR: "Nenhuma sub-rede IPv4 CIDR válida configurada. Verifique a opção Subnets."
             });
             return data;
         }
-        notifiedErrors.delete("subnets");
+        clearConfigError("subnets");
 
-        const portRange = settings.store.portRange.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
-        const startPort = portRange ? Number(portRange[1]) : NaN;
-        const endPort = portRange ? Number(portRange[2]) : NaN;
-        const validRange = portRange !== null && [startPort, endPort].every(port => port >= 1024 && port <= 65535);
-        if (!validRange) {
-            showConfigError("portRange", settings.store.portRange, {
-                en: "Invalid port range. Use min-max with both ports from 1024 to 65535; using 10000-20000.",
-                ptBR: "Intervalo de portas inválido. Use mínimo-máximo com ambas entre 1024 e 65535; usando 10000-20000."
-            });
-        } else {
-            notifiedErrors.delete("portRange");
-        }
-        const minPort = Math.min(...(validRange ? [startPort, endPort] : [10000, 20000]));
-        const maxPort = Math.max(...(validRange ? [startPort, endPort] : [10000, 20000]));
-        const port = minPort + Math.floor(Math.random() * (maxPort - minPort + 1));
+        const { min, max } = resolvePortRange(settings.store.portRange);
+        const port = randomInt(min, max);
 
-        console.log("[Video Guard bypasser] selectProtocol", data);
+        console.log(`[Video Guard bypasser] selectProtocol`, data);
 
-        return {
-            ...data,
-            address,
-            port,
-        };
+        return { ...data, address, port };
     }
 });
