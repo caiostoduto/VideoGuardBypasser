@@ -36,6 +36,47 @@ fi
 # L "english" "português"  → prints the string for the active language
 L() { if [ "$LANG_CODE" = "pt" ]; then printf '%s' "$2"; else printf '%s' "$1"; fi; }
 
+# ── Anonymous install stats (PostHog) ─────────────────────────────────────────
+# Opt out with DO_NOT_TRACK=1
+PH_KEY="phc_kfpB3EAUGzwFg3VM6ixDH6Aa8gVDEh5q9GjcXYByaMLy"  # public, write-only project key
+PH_URL="https://us.i.posthog.com/capture/"
+PLUGIN_API="https://api.github.com/repos/caiostoduto/VideoGuardBypasser/commits/main"
+STEP="start"; TARGET=""; TRACKED=""; VG_VERSION=""
+
+plugin_version() { # short hash of the latest commit on main
+    local h=""
+    if command -v curl >/dev/null 2>&1; then
+        h="$(curl -fsSL -m 3 -H 'Accept: application/vnd.github.sha' "$PLUGIN_API" 2>/dev/null)"
+    elif command -v wget >/dev/null 2>&1; then
+        h="$(wget -qO- -T 3 --header='Accept: application/vnd.github.sha' "$PLUGIN_API" 2>/dev/null)"
+    fi
+    case "$h" in *[!0-9a-f]*|"") echo unknown ;; *) echo "${h:0:7}" ;; esac
+}
+
+track() { # <event>
+    [ -n "$DO_NOT_TRACK" ] && return 0
+    [ -n "$VG_VERSION" ] || VG_VERSION="$(plugin_version)"
+
+    # persistent anonymous ID so reinstalls can be deduped
+    local idf="$INSTALLER_DIR/install-id" id body
+    id="$(cat "$idf" 2>/dev/null)"
+    if [ -z "$id" ]; then
+        id="$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen 2>/dev/null || echo "$$-$(date +%s)")"
+        mkdir -p "$INSTALLER_DIR" 2>/dev/null && printf '%s' "$id" > "$idf" 2>/dev/null
+    fi
+
+    body="$(printf '{"api_key":"%s","event":"%s","distinct_id":"%s","properties":{"os":"%s","arch":"%s","version":"%s","lang":"%s","target":"%s","step":"%s","duration_s":%s,"$process_person_profile":false}}' \
+        "$PH_KEY" "$1" "$id" "$(uname -s)" "$(uname -m)" "$VG_VERSION" "$LANG_CODE" "$TARGET" "$STEP" "$SECONDS")"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsS -m 2 -X POST -H 'Content-Type: application/json' -d "$body" "$PH_URL" >/dev/null 2>&1
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO- -T 2 --header='Content-Type: application/json' --post-data="$body" "$PH_URL" >/dev/null 2>&1
+    fi
+    case "$1" in install_succeeded|install_failed|install_cancelled) TRACKED=1 ;; esac
+    return 0
+}
+
 # ── Colors ────────────────────────────────────────────────────────────────────
 if [ -t 1 ]; then
     BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
@@ -46,7 +87,18 @@ else
 fi
 
 LOG="$(mktemp -t vencord-install.XXXXXX)"
-cleanup() { printf '\033[?25h'; rm -f "$LOG"; }
+cleanup() {
+    local rc=$?
+    printf '\033[?25h'
+    if [ -z "$TRACKED" ]; then
+        case "$rc" in
+            0)   ;;
+            130) track install_cancelled ;;
+            *)   track install_failed ;;
+        esac
+    fi
+    rm -f "$LOG"
+}
 trap cleanup EXIT
 trap 'echo; printf "  %s✖%s %s\n" "$RED" "$RESET" "$(L "Cancelled." "Cancelado.")"; exit 130' INT TERM
 
@@ -57,6 +109,7 @@ warn()    { printf "  %s!%s %s\n" "$YELLOW" "$RESET" "$(L "$1" "$2")"; }
 fail()    { printf "  %s✖%s %s\n" "$RED" "$RESET" "$(L "$1" "$2")" >&2; }
 die()     { fail "$1" "$2"; exit 1; }
 section() { # en pt [dim suffix]
+    STEP="$1"
     printf "\n%s%s▸ %s%s" "$BOLD" "$MAGENTA" "$(L "$1" "$2")" "$RESET"
     [ -n "$3" ] && printf "  %s%s%s" "$DIM" "$3" "$RESET"
     echo
@@ -328,6 +381,7 @@ report_pnpm() {
 # ══════════════════════════════════════════════════════════════════════════════
 clear 2>/dev/null || true
 banner
+track install_started
 
 # 1 ── Git & curl/wget ──────────────────────────────────────────────────────────────
 section "Checking requirements" "Verificando requisitos"
@@ -443,7 +497,7 @@ show_docs_link() {
 }
 
 case "$CHOICE" in
-    1)  # Discord app
+    1)  TARGET=discord
         SPIN_DONE_EN="Vencord built" SPIN_DONE_PT="Vencord compilado" \
         spin_run "Building Vencord..." "Compilando o Vencord..." pnpm build \
             || die "Build failed." "Falha na build."
@@ -457,7 +511,7 @@ case "$CHOICE" in
         FINAL_EN="Restart Discord to load the modification."
         FINAL_PT="Reinicie o Discord para carregar a modificação."
         ;;
-    2)  # Vesktop
+    2)  TARGET=vesktop
         SPIN_DONE_EN="Vencord built" SPIN_DONE_PT="Vencord compilado" \
         spin_run "Building Vencord..." "Compilando o Vencord..." pnpm build \
             || die "Build failed." "Falha na build."
@@ -465,7 +519,7 @@ case "$CHOICE" in
         FINAL_EN="Follow the guide above to use your custom build in Vesktop."
         FINAL_PT="Siga o guia acima para usar sua build personalizada no Vesktop."
         ;;
-    3)  # Web
+    3)  TARGET=web
         SPIN_DONE_EN="Vencord (web) built" SPIN_DONE_PT="Vencord (web) compilado" \
         spin_run "Building Vencord for Web..." "Compilando o Vencord para Web..." pnpm buildWeb \
             || die "Build failed." "Falha na build."
@@ -476,6 +530,7 @@ case "$CHOICE" in
 esac
 
 # 6 ── Done ────────────────────────────────────────────────────────────────────
+STEP="done"; track install_succeeded
 printf "\n%s%s" "$BOLD" "$GREEN"
 echo "  ╭──────────────────────────────────────────────╮"
 DONE_MSG="$(L "All done! Installation complete." "Tudo pronto! Instalação concluída.")"

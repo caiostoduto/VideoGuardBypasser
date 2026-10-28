@@ -25,7 +25,7 @@ $VencordDir = [IO.Path]::GetFullPath($VencordDir)
 
 # ── Language ──────────────────────────────────────────────────────────────────
 if (-not $Language) {
-    $Language = @($env:VG_LANG, $env:LC_ALL, $env:LC_MESSAGES, $env:LANG,
+    $Language = @($env:LC_ALL, $env:LC_MESSAGES, $env:LANG,
                   [Globalization.CultureInfo]::CurrentUICulture.Name) |
         Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
         Select-Object -First 1
@@ -48,6 +48,65 @@ $InstallerDir = Join-Path $env:LOCALAPPDATA 'vencord-installer'
 $PnpmHome     = Join-Path $InstallerDir 'pnpm'
 $LocalPnpmCmd = Join-Path $PnpmHome 'node_modules\.bin\pnpm.cmd'
 
+# ── Anonymous install stats (PostHog) ─────────────────────────────────────────
+# Opt out with $env:DO_NOT_TRACK=1
+$PhKey     = 'phc_XXXX'                              # public, write-only project key
+$PhUrl     = 'https://us.i.posthog.com/capture/'     # eu.i.posthog.com for EU cloud
+$PluginApi = 'https://api.github.com/repos/caiostoduto/VideoGuardBypasser/commits/main'
+$S.Step    = 'start'
+$S.Target  = ''
+$S.Version = ''
+$S.Outcome = ''
+$S.Clock   = [Diagnostics.Stopwatch]::StartNew()
+
+function Get-PluginVersion {   # short hash of the latest commit on main
+    try {
+        $h = ([string](Invoke-RestMethod -Uri $PluginApi -TimeoutSec 3 `
+                -Headers @{ Accept = 'application/vnd.github.sha'; 'User-Agent' = 'vg-installer' })).Trim()
+        if ($h -match '^[0-9a-f]{40}$') { return $h.Substring(0, 7) }
+    } catch {}
+    return 'unknown'
+}
+
+function Send-Track([string]$Name) {
+    if ($env:DO_NOT_TRACK) { return }
+    try {
+        if (-not $S.Version) { $S.Version = Get-PluginVersion }
+
+        # persistent anonymous ID so reinstalls can be deduped
+        $idFile = Join-Path $InstallerDir 'install-id'
+        $id = $null
+        try { if (Test-Path -LiteralPath $idFile) { $id = (Get-Content -LiteralPath $idFile -Raw).Trim() } } catch {}
+        if (-not $id) {
+            $id = [guid]::NewGuid().ToString()
+            try {
+                New-Item -ItemType Directory -Force -Path $InstallerDir | Out-Null
+                Set-Content -LiteralPath $idFile -Value $id -NoNewline
+            } catch {}
+        }
+
+        $body = @{
+            api_key     = $PhKey
+            event       = $Name
+            distinct_id = $id
+            properties  = @{
+                os         = 'Windows'
+                arch       = [string]$env:PROCESSOR_ARCHITECTURE
+                shell      = "powershell $($PSVersionTable.PSVersion.Major)"
+                version    = $S.Version
+                lang       = $Language
+                target     = $S.Target
+                step       = $S.Step
+                duration_s = [int]$S.Clock.Elapsed.TotalSeconds
+                '$process_person_profile' = $false
+            }
+        } | ConvertTo-Json -Depth 4 -Compress
+
+        Invoke-RestMethod -Uri $PhUrl -Method Post -ContentType 'application/json' `
+            -Body $body -TimeoutSec 2 | Out-Null
+    } catch {}
+}
+
 # ── Output helpers ────────────────────────────────────────────────────────────
 function Write-Line([string]$Symbol, [ConsoleColor]$Color, [string]$Text, [string]$Note = '') {
     Write-Host -NoNewline '  '
@@ -64,12 +123,14 @@ function Write-Cancelled([string]$Text) { Write-Line '!' Red $Text }
 
 function Stop-Install([string]$Text) {
     Write-Fail $Text
+    $S.Outcome = 'install_failed'
     $S.Finished = $true
     $global:LASTEXITCODE = 1
     throw 'VG_ABORT'
 }
 function Stop-Cancelled([string]$Text) {
     Write-Cancelled $Text
+    $S.Outcome = 'install_cancelled'
     $S.Finished = $true
     $global:LASTEXITCODE = 1
     throw 'VG_ABORT'
@@ -446,9 +507,10 @@ Push-Location
 try {
     if ($S.Interactive) { try { Clear-Host } catch {} }
     Show-Banner
+    Send-Track 'install_started'
 
-        # 1 ── Git & curl/wget ─────────────────────────────────────────────────────
-    Write-Section (T 'Checking requirements' 'Verificando requisitos')
+    # 1 ── Git & curl/wget ─────────────────────────────────────────────────────
+    $S.Step = 'Checking requirements'; Write-Section (T 'Checking requirements' 'Verificando requisitos')
     $gitNote = ''
     $git = Find-App 'git.exe'
     if (-not $git) {
@@ -485,7 +547,7 @@ try {
     if ($VencordDir.StartsWith($homePrefix, [StringComparison]::OrdinalIgnoreCase)) {
         $vencordShow = '~\' + $VencordDir.Substring($homePrefix.Length)
     }
-    Write-Section (T 'Vencord repository' 'Repositório do Vencord')
+    $S.Step = 'Vencord repository'; Write-Section (T 'Vencord repository' 'Repositório do Vencord')
     if (Test-Path -LiteralPath (Join-Path $VencordDir '.git') -PathType Container) {
         if (Ask-YesNo "Vencord found at $vencordShow. Update it?" "Vencord encontrado em $vencordShow. Atualizar?" $true) {
             if (-not (Invoke-Spin -En 'Updating Vencord...' -Pt 'Atualizando o Vencord...' `
@@ -517,7 +579,7 @@ try {
     if ($m.Success) { $S.ReqPnpm = $m.Groups[1].Value }
 
     $pnpmReqShown = if ($S.ReqPnpm) { $S.ReqPnpm } else { 'latest' }
-    Write-Section (T 'Node.js & pnpm' 'Node.js e pnpm') "Node ≥ $($S.ReqNode) · pnpm $pnpmReqShown"
+    $S.Step = 'Node.js & pnpm'; Write-Section (T 'Node.js & pnpm' 'Node.js e pnpm') "Node ≥ $($S.ReqNode) · pnpm $pnpmReqShown"
 
     # Node
     Use-LocalNode
@@ -547,7 +609,7 @@ try {
     }
 
     # 4 ── Dependencies + plugin ───────────────────────────────────────────────
-    Write-Section (T 'Setting up' 'Configurando')
+    $S.Step = 'Setting up'; Write-Section (T 'Setting up' 'Configurando')
     if (-not (Invoke-Pnpm 'Installing dependencies...' 'Instalando dependências...' 'Dependencies installed' 'Dependências instaladas' @('install', '--frozen-lockfile'))) {
         Stop-Install (T 'Dependency installation failed.' 'Falha ao instalar as dependências.')
     }
@@ -563,7 +625,7 @@ try {
     if (-not $pluginOk) { Stop-Install (T 'Plugin download failed.' 'Falha ao baixar o plugin.') }
 
     # 5 ── Target ──────────────────────────────────────────────────────────────
-    Write-Section (T 'Build target' 'Destino da build')
+    $S.Step = 'Build target'; Write-Section (T 'Build target' 'Destino da build')
     foreach ($opt in @(@('1', (T 'Discord app' 'App do Discord')), @('2', 'Vesktop'), @('3', (T 'Web (browser)' 'Web (navegador)')))) {
         Write-Host -NoNewline '    '
         Write-Host -NoNewline "$($opt[0]))" -ForegroundColor Cyan
@@ -582,7 +644,7 @@ try {
     Write-Host ''
 
     switch ($choice) {
-        '1' {
+        '1' { $S.Target = 'discord'
             if (-not (Invoke-Pnpm 'Building Vencord...' 'Compilando o Vencord...' 'Vencord built' 'Vencord compilado' @('build'))) {
                 Stop-Install (T 'Build failed.' 'Falha na build.')
             }
@@ -597,14 +659,14 @@ try {
             $final = T 'Restart Discord to load the modification.' `
                        'Reinicie o Discord para carregar a modificação.'
         }
-        '2' {
+        '2' { $S.Target = 'vesktop'
             if (-not (Invoke-Pnpm 'Building Vencord...' 'Compilando o Vencord...' 'Vencord built' 'Vencord compilado' @('build'))) {
                 Stop-Install (T 'Build failed.' 'Falha na build.')
             }
             Show-DocsLink
             $final = T 'Follow the guide above to use your custom build in Vesktop.' 'Siga o guia acima para usar sua build personalizada no Vesktop.'
         }
-        '3' {
+        '3' { $S.Target = 'web'
             if (-not (Invoke-Pnpm 'Building Vencord for Web...' 'Compilando o Vencord para Web...' 'Vencord (web) built' 'Vencord (web) compilado' @('buildWeb'))) {
                 Stop-Install (T 'Build failed.' 'Falha na build.')
             }
@@ -614,6 +676,7 @@ try {
     }
 
     # 6 ── Done ────────────────────────────────────────────────────────────────
+    $S.Step = 'done'; $S.Outcome = 'install_succeeded'
     $doneMsg = T 'All done! Installation complete.' 'Tudo pronto! Instalação concluída.'
     Write-Host ''
     Write-Host '  ╭──────────────────────────────────────────────╮' -ForegroundColor Green
@@ -628,6 +691,7 @@ try {
 catch {
     if ($_.Exception.Message -ne 'VG_ABORT') {
         Write-Fail (T "Installer failed: $($_.Exception.Message)" "Falha no instalador: $($_.Exception.Message)")
+        $S.Outcome = 'install_failed'
         $global:LASTEXITCODE = 1
         $S.Finished = $true
     }
@@ -637,8 +701,10 @@ finally {
     if (-not $S.Finished) {   # Ctrl+C
         Write-Host ''
         Write-Fail (T 'Cancelled.' 'Cancelado.')
+        $S.Outcome = 'install_cancelled'
         $global:LASTEXITCODE = 130
     }
+    if ($S.Outcome) { Send-Track $S.Outcome }
     $env:PATH = $originalPath
     Pop-Location
 }
