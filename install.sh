@@ -486,4 +486,9 @@ printf "  │  ✔ %-*s│\n" "$DONE_WIDTH" "$DONE_MSG"
 echo "  ╰──────────────────────────────────────────────╯"
 printf "%s\n" "$RESET"
 info "$FINAL_EN" "$FINAL_PT"
+if [ "$CHOICE" = "2" ] || [ "$CHOICE" = "3" ]; then
+    info "If installing on Vesktop or Web, please take a look at:" \
+         "Se estiver instalando no Vesktop ou na Web, consulte:"
+    printf "    %s%s%s\n" "$BOLD$BLUE" "https://github.com/caiostoduto/VideoGuardBypasser/issues/1" "$RESET"
+fi
 echo

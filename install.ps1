@@ -621,6 +621,10 @@ try {
     Write-Host '  ╰──────────────────────────────────────────────╯' -ForegroundColor Green
     Write-Host ''
     Write-Info $final
+    if ($choice -eq '2' -or $choice -eq '3') {
+        Write-Info (T 'If installing on Vesktop or Web, please take a look at:' 'Se estiver instalando no Vesktop ou na Web, consulte:')
+        Write-Host '    https://github.com/caiostoduto/VideoGuardBypasser/issues/1' -ForegroundColor Blue
+    }
     Write-Host ''
     $S.Finished = $true
     $global:LASTEXITCODE = 0
