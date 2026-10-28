@@ -5,6 +5,7 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { findStoreLazy } from "@webpack";
 import { LocaleStore, showToast, UserStore } from "@webpack/common";
@@ -33,6 +34,8 @@ interface ExperimentStore {
 }
 
 const ExperimentStore: ExperimentStore = findStoreLazy("ApexExperimentStore");
+
+const logger = new Logger("VideoGuardBypasser", "#f5afcb");
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -180,6 +183,7 @@ function resolvePortRange(input: string): PortRange {
         en: "Invalid port range. Use min-max with both ports from 1024 to 65535; using 10000-20000.",
         ptBR: "Intervalo de portas inválido. Use mínimo-máximo com ambas entre 1024 e 65535; usando 10000-20000."
     });
+    logger.error("Failed to resolve port range", input);
     return FALLBACK_PORTS;
 }
 
@@ -208,7 +212,7 @@ export default definePlugin({
 
     start() {
         disableVideoGuardExperiment();
-        console.log(`[Video Guard bypasser] Started`);
+        logger.info("Started");
     },
 
     /**
@@ -220,7 +224,7 @@ export default definePlugin({
      * @returns The updated connection data
      */
     onSelectProtocol(_sock: unknown, protocol: string, data: object) {
-        console.log(`[Video Guard bypasser] before patch`, protocol, data);
+        logger.debug("onSelectProtocol (before): ", protocol, data);
         if (protocol !== "udp") return data;
 
         const address = randomIpFromSubnets(settings.store.subnets);
@@ -229,6 +233,7 @@ export default definePlugin({
                 en: "No valid IPv4 CIDR subnets configured. Check the Subnets setting.",
                 ptBR: "Nenhuma sub-rede IPv4 CIDR válida configurada. Verifique a opção Subnets."
             });
+            logger.error("Failed to select random IP from subnets", settings.store.subnets);
             return data;
         }
         clearConfigError("subnets");
@@ -236,7 +241,7 @@ export default definePlugin({
         const { min, max } = resolvePortRange(settings.store.portRange);
         const port = randomInt(min, max);
 
-        console.log(`[Video Guard bypasser] after patch`, data);
+        logger.debug("onSelectProtocol (after): ", data);
         return { ...data, address, port };
     }
 });
