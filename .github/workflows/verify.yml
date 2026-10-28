@@ -27,7 +27,7 @@ jobs:
       - name: Add plugin to userplugins
         run: |
           mkdir -p "vencord/src/userplugins/videoGuardBypasser"
-          rsync -a "plugin/vencord/" "vencord/src/userplugins/videoGuardBypasser"
+          rsync -a "plugin/plugin/" "vencord/src/userplugins/videoGuardBypasser"
 
       # pnpm version is read from the "packageManager" field in Vencord's package.json
       - name: Setup pnpm

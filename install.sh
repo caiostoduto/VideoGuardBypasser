@@ -9,7 +9,7 @@
 
 VENCORD_REPO="https://github.com/Vendicated/Vencord.git"
 PLUGIN_NAME="videoGuardBypasser"
-PLUGIN_URL="https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts"
+PLUGIN_URL="https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/plugin/index.ts"
 DOCS_URL="https://docs.vencord.dev/installing/#installing-your-custom-build"
 
 # ── Language ──────────────────────────────────────────────────────────────────

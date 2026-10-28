@@ -17,7 +17,7 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::S
 
 $VencordRepo = 'https://github.com/Vendicated/Vencord.git'
 $PluginName  = 'videoGuardBypasser'
-$PluginUrl   = 'https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/vencord/index.ts'
+$PluginUrl   = 'https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/plugin/index.ts'
 $DocsUrl     = 'https://docs.vencord.dev/installing/#installing-your-custom-build'
 
 if (-not $VencordDir) { $VencordDir = Join-Path $HOME 'Vencord' }
