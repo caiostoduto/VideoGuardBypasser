@@ -34,7 +34,7 @@ Quando você interage para entrar numa ligação (ou clica para assistir uma tel
 
 Esse sistema possui uma vulnerabilidade muito conhecida<sup>[∗](https://cwe.mitre.org/data/definitions/20.html)</sup>: nunca se deve confiar em dados enviados pelo cliente sem validá-los. O motivo é que, como você viu anteriormente na seção anterior [Lado servidor (server-side)](#lado-cliente-client-side) o usuário pode modificar o comportamento cliente, incluindo a sua comunicação com o servidor.
 
-Então, para circunvir a restrição feita pelo servidor de mídia, o plugin intercepta a mensagem que o cliente manda contendo o seu endereço IP e o altera o conteúdo da mensagem para conter um endereço diferente do seu que não sofre da política de restrição<sup>[∗](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L117)</sup>, já que o servidor não o valida corretamente.
+Então, para circunvir a restrição feita pelo servidor de mídia, o plugin intercepta a mensagem que o cliente manda contendo o seu endereço IP e altera o conteúdo da mensagem para conter um endereço diferente do seu que não sofre da política de restrição<sup>[∗](https://github.com/caiostoduto/VideoGuardBypasser/blob/90ddcd6b4798dc61a136e789bb6d8c4dfb911cca/vencord/index.ts#L117)</sup>, já que o servidor não o valida corretamente.
 
 ## Instalação (Vencord)
 
@@ -64,7 +64,7 @@ Abra uma janela do PowerShell e execute o comando:
 irm https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.ps1 | iex
 ```
 
-Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord.<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar, reinicie o Discord. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord.<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>Caso queira especificar o local de instalação do Vencord</summary>
@@ -84,7 +84,7 @@ Pré-requisitos: `git` e `curl` ou `wget`
 curl -fsSL https://raw.githubusercontent.com/caiostoduto/VideoGuardBypasser/main/install.sh | bash
 ```
 
-Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar, reinicie o Discord. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 <details closed>
 <summary>Caso queira especificar o local de instalação do Vencord</summary>
@@ -113,7 +113,7 @@ pnpm build # ou pnpm buildWeb
 pnpm inject # apenas se Discord Desktop
 ```
 
-Depois de instalar. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
+Depois de instalar, reinicie o Discord. Caso a instalação tenha sido feita no Discord Desktop, talvez você precise executar o comando novamente após uma atualização do Discord<sup>[∗](https://www.reddit.com/r/VencordHelp/comments/1w44ddj/issues_after_every_discord_update/)</sup>.
 
 ## Configurações
 
